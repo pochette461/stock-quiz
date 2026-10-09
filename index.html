@@ -3,13 +3,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ローソク足クイズ:この銘柄はどれ?</title>
 <style>
-:root{--bg:#e9edf1;--fg:#13202e;--pn:#f8fafb;--ln:#c4ccd5;--mu:#5b6877;--ac:#244a7c;--up:#d13b34;--dn:#1f8a64}
+:root{--bg:#e9edf1;--fg:#13202e;--pn:#f8fafb;--ln:#c4ccd5;--mu:#5b6877;--ac:#244a7c;--good:#2a6fd1;--bad:#d23a30}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1722;--fg:#e6ebf1;--pn:#162231;--ln:#2d3d50;--mu:#93a1b3;--ac:#8db3ea}}
 *{box-sizing:border-box}
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;justify-content:center}
 main{width:100%;max-width:720px}
 h1{font-size:18px;margin:0 0 12px}
-.top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;color:var(--mu)}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px;color:var(--mu)}
 .panel{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:16px}
 .item{margin-bottom:12px}
 .lbl{font-size:12px;color:var(--mu)}
@@ -23,18 +23,27 @@ canvas{width:100%;display:block}
 button{font:inherit;padding:12px;border-radius:4px;border:1px solid var(--ln);background:var(--pn);color:var(--fg);cursor:pointer}
 button:hover:not(:disabled){border-color:var(--ac)}
 button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.ok{background:var(--dn)!important;border-color:var(--dn)!important;color:#fff!important}
-.ng{background:var(--up)!important;border-color:var(--up)!important;color:#fff!important}
+.opts button.ok{background:var(--good);border-color:var(--good);color:#fff}
+.opts button.ng{background:var(--bad);border-color:var(--bad);color:#fff}
+.res{display:flex;align-items:center;gap:14px;margin-top:12px;padding:10px 14px;border:3px solid;border-radius:6px}
+.res[hidden]{display:none}
+.res.good{border-color:var(--good);color:var(--good)}
+.res.bad{border-color:var(--bad);color:var(--bad)}
+.res svg{flex:none}
+.rt{font-size:15px;line-height:1.6;color:var(--fg)}
+.rt b{font-size:20px}
+.good .rt b{color:var(--good)}.bad .rt b{color:var(--bad)}
+.hd{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.hd.good{color:var(--good)}.hd.bad{color:var(--bad)}
 #hints{margin-top:10px;font-size:14px;min-height:22px}
 #hints div{margin-bottom:2px}
 #hints a{color:var(--ac)}
-.msg{margin-top:6px;min-height:22px;font-size:14px}
 .next{margin-top:8px;width:100%;background:var(--ac);color:var(--bg);border:0}
 .row{font-size:14px;line-height:1.7}
 </style></head><body><main>
 <h1>ローソク足クイズ:この銘柄はどれ?</h1>
 <div id="app">読み込み中…</div>
-<p class="lbl">プライム市場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額です。娯楽・学習用です。</p>
+<p class="lbl">東証上場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額です。娯楽・学習用です。</p>
 </main>
 <script>
 const $=s=>document.querySelector(s),ROUNDS=5,SC=[1,.5,.25],LM=58,RM=6;
@@ -44,6 +53,9 @@ let D=[],Q=[],O=[],H=[],qi=0,score=0,hn=0,done=false,cur,asof="";
 const fmt=v=>v>=1e12?(v/1e12).toFixed(2)+"兆円":Math.round(v/1e8).toLocaleString()+"億円";
 const fmtAx=(v,st)=>v>=1e12?(v/1e12).toFixed(st%1e12===0?0:1)+"兆":Math.round(v/1e8).toLocaleString()+"億";
 const pt=n=>Number(n.toFixed(2));
+const mark=(ok,sz)=>ok
+ ?`<svg viewBox="0 0 64 64" width="${sz}" height="${sz}" role="img" aria-label="正解"><circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="8"/></svg>`
+ :`<svg viewBox="0 0 64 64" width="${sz}" height="${sz}" role="img" aria-label="不正解"><path d="M14 14L50 50M50 14L14 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/></svg>`;
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 fetch("stocks.json?t="+Date.now()).then(r=>r.json()).then(j=>{
  D=Object.entries(j).filter(([k,v])=>v.marketcap&&v.candles&&v.candles.length>20).map(([k,v])=>({code:k,...v}));
@@ -64,7 +76,8 @@ function show(){
  <div class="panel"><div class="lbl">時価総額(${asof}時点)</div><div class="cap">${fmt(cur.marketcap)}</div>
  <canvas id="cv"></canvas><div id="tip">チャートをなぞると、その日の時価総額が見られます</div>
  <div class="opts">${O.map((o,i)=>`<button data-i="${i}">${o.name}</button>`).join("")}</div>
- <div id="hints">${hintHTML()}</div><div class="msg" id="msg"></div>
+ <div class="res" id="res" hidden></div>
+ <div id="hints">${hintHTML()}</div>
  <button class="next" id="nx" hidden></button></div>`;
  redraw();
  const cv=$("#cv"),c=cur.candles;
@@ -126,13 +139,18 @@ $("#app").onclick=e=>{
  score+=p;H.push({stock:cur,pick,right,hn,p});
  document.querySelectorAll(".opts button").forEach((x,i)=>{x.disabled=true;if(O[i]===cur)x.classList.add("ok");else if(x===b)x.classList.add("ng")});
  $("#hints").innerHTML=hintHTML();
- $("#msg").textContent=`${right?"正解!":"不正解。"} ${cur.name}(${cur.code}・${cur.sector}) +${p}点`;
+ const info=`${cur.name}(${cur.code}・${cur.sector})`;
+ const res=$("#res");res.hidden=false;res.className="res "+(right?"good":"bad");
+ res.innerHTML=mark(right,72)+`<div class="rt">`+(right
+  ?`<b>正解!</b><br>${info} +${p}点`
+  :`<b>不正解</b><br>正解は ${info}<br>あなたの回答:${pick.name}`)+`</div>`;
  const nx=$("#nx");nx.hidden=false;nx.textContent=qi+1<Q.length?"次の問題":"結果を見る";
+ res.scrollIntoView({block:"nearest"});
 };
 function end(){
  cur=null;
  $("#app").innerHTML=`<div class="panel item"><div class="lbl">結果</div><div class="cap">${pt(score)} / ${Q.length}点</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
- H.map((h,i)=>`<div class="panel item"><div class="top"><span>第${i+1}問 ${h.right?"○ 正解":"× 不正解"}</span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>
+ H.map((h,i)=>`<div class="panel item"><div class="top"><span class="hd ${h.right?"good":"bad"}">${mark(h.right,36)}<span>第${i+1}問 ${h.right?"正解":"不正解"}</span></span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>
  <div class="lbl">時価総額(${asof}時点)</div><div class="cap sm">${fmt(h.stock.marketcap)}</div>
  <canvas class="mini" data-i="${i}"></canvas>
  <div class="row">あなたの回答:<b>${h.pick.name}</b></div>
