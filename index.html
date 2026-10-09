@@ -11,9 +11,13 @@ main{width:100%;max-width:720px}
 h1{font-size:18px;margin:0 0 12px}
 .top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;color:var(--mu)}
 .panel{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:16px}
+.item{margin-bottom:12px}
 .lbl{font-size:12px;color:var(--mu)}
 .cap{font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;font-size:40px;font-weight:700;line-height:1.2;margin:2px 0 10px}
-canvas{width:100%;height:300px;display:block;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+.cap.sm{font-size:24px;margin-bottom:8px}
+canvas{width:100%;display:block}
+#cv{height:300px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+.mini{height:90px;border:1px solid var(--ln);margin-bottom:8px}
 #tip{font-size:12px;color:var(--mu);margin:6px 0 0;min-height:18px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 button{font:inherit;padding:12px;border-radius:4px;border:1px solid var(--ln);background:var(--pn);color:var(--fg);cursor:pointer}
@@ -21,18 +25,25 @@ button:hover:not(:disabled){border-color:var(--ac)}
 button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .ok{background:var(--dn)!important;border-color:var(--dn)!important;color:#fff!important}
 .ng{background:var(--up)!important;border-color:var(--up)!important;color:#fff!important}
-.msg{margin-top:10px;min-height:22px;font-size:14px}
-.msg a{color:var(--ac)}
+#hints{margin-top:10px;font-size:14px;min-height:22px}
+#hints div{margin-bottom:2px}
+#hints a{color:var(--ac)}
+.msg{margin-top:6px;min-height:22px;font-size:14px}
 .next{margin-top:8px;width:100%;background:var(--ac);color:var(--bg);border:0}
+.row{font-size:14px;line-height:1.7}
 </style></head><body><main>
 <h1>ローソク足クイズ:この銘柄はどれ?</h1>
 <div id="app">読み込み中…</div>
-<p class="lbl">プライム市場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。娯楽・学習用です。</p>
+<p class="lbl">プライム市場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額です。娯楽・学習用です。</p>
 </main>
 <script>
-const $=s=>document.querySelector(s),ROUNDS=10;
-let D=[],Q=[],O=[],qi=0,score=0,hint=false,done=false,cur,asof="";
+const $=s=>document.querySelector(s),ROUNDS=5,SC=[1,.5,.25],LM=58,RM=6;
+const GROUP={自動車:"製造業",機械:"製造業",電機:"製造業",半導体:"製造業",素材:"製造業",医薬:"製造業",食品:"製造業",銀行:"金融",保険:"金融",商社:"商社・小売",小売:"商社・小売"};
+const grp=s=>GROUP[s]||"サービス・インフラ";
+let D=[],Q=[],O=[],H=[],qi=0,score=0,hn=0,done=false,cur,asof="";
 const fmt=v=>v>=1e12?(v/1e12).toFixed(2)+"兆円":Math.round(v/1e8).toLocaleString()+"億円";
+const fmtAx=(v,st)=>v>=1e12?(v/1e12).toFixed(st%1e12===0?0:1)+"兆":Math.round(v/1e8).toLocaleString()+"億";
+const pt=n=>Number(n.toFixed(2));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 fetch("stocks.json?t="+Date.now()).then(r=>r.json()).then(j=>{
  D=Object.entries(j).filter(([k,v])=>v.marketcap&&v.candles&&v.candles.length>20).map(([k,v])=>({code:k,...v}));
@@ -40,50 +51,93 @@ fetch("stocks.json?t="+Date.now()).then(r=>r.json()).then(j=>{
  asof=D.map(d=>d.candles.at(-1)[0]).sort().at(-1);
  start();
 }).catch(()=>{$("#app").textContent="stocks.json を読み込めませんでした。公開したサイト上で開き、データ更新が済んでいるか確認してください。"});
-function start(){Q=shuffle(D.slice()).slice(0,ROUNDS);qi=0;score=0;show()}
+function start(){Q=shuffle(D.slice()).slice(0,ROUNDS);qi=0;score=0;H=[];show()}
+function hintHTML(){
+ const c=cur.candles,p=(c.at(-1)[4]/c[0][4]-1)*100;
+ const t=["この1年の騰落率:"+(p>=0?"+":"")+p.toFixed(0)+"%","業種の大分類:"+grp(cur.sector)];
+ return t.slice(0,hn).map((s,i)=>`<div>ヒント${i+1}:${s}</div>`).join("")+(hn<2&&!done?`<a href="#" id="hb">ヒント${hn+1}を見る(正解で${SC[hn+1]}点)</a>`:"");
+}
 function show(){
- cur=Q[qi];done=false;hint=false;
+ cur=Q[qi];done=false;hn=0;
  O=shuffle([cur,...shuffle(D.filter(d=>d!==cur)).slice(0,3)]);
- $("#app").innerHTML=`<div class="top"><span>第${qi+1}問 / ${Q.length}</span><span>スコア ${score}</span></div>
+ $("#app").innerHTML=`<div class="top"><span>第${qi+1}問 / ${Q.length}</span><span>スコア ${pt(score)}</span></div>
  <div class="panel"><div class="lbl">時価総額(${asof}時点)</div><div class="cap">${fmt(cur.marketcap)}</div>
  <canvas id="cv"></canvas><div id="tip">チャートをなぞると、その日の時価総額が見られます</div>
  <div class="opts">${O.map((o,i)=>`<button data-i="${i}">${o.name}</button>`).join("")}</div>
- <div class="msg" id="msg"><a href="#" id="hb">ヒントを見る(正解で0.5点)</a></div>
+ <div id="hints">${hintHTML()}</div><div class="msg" id="msg"></div>
  <button class="next" id="nx" hidden></button></div>`;
- draw();
+ redraw();
  const cv=$("#cv"),c=cur.candles;
  cv.onpointermove=e=>{
-  const b=cv.getBoundingClientRect(),i=Math.min(c.length-1,Math.max(0,((e.clientX-b.left)/b.width*c.length)|0));
+  const b=cv.getBoundingClientRect(),i=Math.min(c.length-1,Math.max(0,((e.clientX-b.left-LM)/(b.width-LM-RM)*c.length)|0));
   const k=c[i],ch=i?(k[4]/c[i-1][4]-1)*100:0;
   $("#tip").textContent=`${k[0]}  前日比 ${ch>=0?"+":""}${ch.toFixed(1)}%  時価総額 ${fmt(k[4]*cur.marketcap/c.at(-1)[4])}`;
  };
 }
-function draw(){
- const cv=$("#cv");if(!cv)return;
- const c=cur.candles,r=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
- cv.width=W*r;cv.height=H*r;
- const x=cv.getContext("2d");x.scale(r,r);
- const lo=Math.min(...c.map(k=>k[3])),hi=Math.max(...c.map(k=>k[2])),p=10,bw=W/c.length;
- const y=v=>p+(hi-v)/(hi-lo)*(H-2*p);
- c.forEach((k,i)=>{
-  const cx=(i+.5)*bw;
-  x.strokeStyle=x.fillStyle=k[4]>=k[1]?"#d13b34":"#1f8a64";
-  x.beginPath();x.moveTo(cx,y(k[2]));x.lineTo(cx,y(k[3]));x.stroke();
-  x.fillRect(cx-bw*.35,y(Math.max(k[1],k[4])),bw*.7,Math.max(1,Math.abs(y(k[1])-y(k[4]))));
+function drawChart(cv,s,full){
+ const c=s.candles,r=devicePixelRatio||1,W=cv.clientWidth,Ht=cv.clientHeight;
+ cv.width=W*r;cv.height=Ht*r;
+ const x=cv.getContext("2d");x.setTransform(r,0,0,r,0,0);
+ const st=getComputedStyle(document.documentElement),mu=st.getPropertyValue("--mu").trim(),ln=st.getPropertyValue("--ln").trim();
+ const k=s.marketcap/c.at(-1)[4];
+ const L=full?LM:6,R=RM,T=8,B=full?24:6;
+ const lo=Math.min(...c.map(q=>q[3])),hi=Math.max(...c.map(q=>q[2]));
+ const pw=W-L-R,ph=Ht-T-B,bw=pw/c.length;
+ const y=v=>T+(hi-v)/(hi-lo)*ph;
+ x.font="11px sans-serif";
+ if(full){
+  const raw=(hi-lo)*k/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/mag,step=(n<=1?1:n<=2?2:n<=5?5:10)*mag;
+  x.textAlign="right";x.textBaseline="middle";x.lineWidth=.5;
+  for(let t=Math.ceil(lo*k/step)*step;t<=hi*k;t+=step){
+   const yy=y(t/k);
+   x.strokeStyle=ln;x.beginPath();x.moveTo(L,yy);x.lineTo(W-R,yy);x.stroke();
+   x.fillStyle=mu;x.fillText(fmtAx(t,step),L-6,yy);
+  }
+  x.textAlign="center";x.textBaseline="top";
+  let prev="",right=-1e9,first=true;
+  c.forEach((q,i)=>{
+   const ym=q[0].slice(0,7);if(ym===prev)return;prev=ym;
+   const mo=+ym.slice(5),txt=(first||mo===1?ym.slice(0,4)+"年":"")+mo+"月",w=x.measureText(txt).width,cx=L+(i+.5)*bw;
+   if(cx-w/2<right+8||cx+w/2>W)return;
+   first=false;right=cx+w/2;
+   x.strokeStyle=ln;x.beginPath();x.moveTo(cx,Ht-B);x.lineTo(cx,Ht-B+4);x.stroke();
+   x.fillStyle=mu;x.fillText(txt,cx,Ht-B+6);
+  });
+ }
+ c.forEach((q,i)=>{
+  const cx=L+(i+.5)*bw;
+  x.strokeStyle=x.fillStyle=q[4]>=q[1]?"#d13b34":"#1f8a64";
+  x.lineWidth=1;x.beginPath();x.moveTo(cx,y(q[2]));x.lineTo(cx,y(q[3]));x.stroke();
+  x.fillRect(cx-bw*.35,y(Math.max(q[1],q[4])),bw*.7,Math.max(1,Math.abs(y(q[1])-y(q[4]))));
  });
 }
-addEventListener("resize",draw);
+function redraw(){
+ const cv=$("#cv");if(cv&&cur)drawChart(cv,cur,true);
+ document.querySelectorAll("canvas.mini").forEach(m=>drawChart(m,H[+m.dataset.i].stock,false));
+}
+addEventListener("resize",redraw);
 $("#app").onclick=e=>{
- if(e.target.id==="hb"){e.preventDefault();hint=true;$("#msg").textContent="ヒント:セクターは「"+cur.sector+"」";return}
+ if(e.target.id==="hb"){e.preventDefault();if(hn<2&&!done){hn++;$("#hints").innerHTML=hintHTML()}return}
  const b=e.target.closest("button");if(!b)return;
  if(b.id==="nx"){qi++;qi<Q.length?show():end();return}
  if(b.id==="rs"){start();return}
  if(b.dataset.i===undefined||done)return;
- done=true;const pick=O[+b.dataset.i],right=pick===cur;
- if(right)score+=hint?.5:1;
+ done=true;const pick=O[+b.dataset.i],right=pick===cur,p=right?SC[hn]:0;
+ score+=p;H.push({stock:cur,pick,right,hn,p});
  document.querySelectorAll(".opts button").forEach((x,i)=>{x.disabled=true;if(O[i]===cur)x.classList.add("ok");else if(x===b)x.classList.add("ng")});
- $("#msg").textContent=`${right?"正解!":"不正解。"} ${cur.name}(${cur.code}・${cur.sector})`;
+ $("#hints").innerHTML=hintHTML();
+ $("#msg").textContent=`${right?"正解!":"不正解。"} ${cur.name}(${cur.code}・${cur.sector}) +${p}点`;
  const nx=$("#nx");nx.hidden=false;nx.textContent=qi+1<Q.length?"次の問題":"結果を見る";
 };
-function end(){$("#app").innerHTML=`<div class="panel"><div class="lbl">結果</div><div class="cap">${score} / ${Q.length}点</div><button class="next" id="rs">もう一度あそぶ</button></div>`}
+function end(){
+ cur=null;
+ $("#app").innerHTML=`<div class="panel item"><div class="lbl">結果</div><div class="cap">${pt(score)} / ${Q.length}点</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
+ H.map((h,i)=>`<div class="panel item"><div class="top"><span>第${i+1}問 ${h.right?"○ 正解":"× 不正解"}</span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>
+ <div class="lbl">時価総額(${asof}時点)</div><div class="cap sm">${fmt(h.stock.marketcap)}</div>
+ <canvas class="mini" data-i="${i}"></canvas>
+ <div class="row">あなたの回答:<b>${h.pick.name}</b></div>
+ <div class="row">正解:<b>${h.stock.name}</b>(${h.stock.code}・${h.stock.sector})</div></div>`).join("")+
+ `<button class="next" id="rs">もう一度あそぶ</button>`;
+ redraw();
+}
 </script></body></html>
