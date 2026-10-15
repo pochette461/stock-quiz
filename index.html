@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ローソク足クイズ:この銘柄はどれ?</title>
+<title>カブの野望</title>
 <style>
 :root{--bg:#e9edf1;--fg:#13202e;--pn:#f8fafb;--ln:#c4ccd5;--mu:#5b6877;--ac:#244a7c;--good:#2a6fd1;--bad:#d23a30}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1722;--fg:#e6ebf1;--pn:#162231;--ln:#2d3d50;--mu:#93a1b3;--ac:#8db3ea}}
 *{box-sizing:border-box}
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;justify-content:center}
 main{width:100%;max-width:720px}
-h1{font-size:18px;margin:0 0 12px}
+h1{font-size:20px;margin:0 0 12px}
 .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px;color:var(--mu)}
 .panel{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:16px}
 .item{margin-bottom:12px}
@@ -33,6 +33,7 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .rt{font-size:15px;line-height:1.6;color:var(--fg)}
 .rt b{font-size:20px}
 .good .rt b{color:var(--good)}.bad .rt b{color:var(--bad)}
+.story{font-size:13px;color:var(--mu);margin-top:2px}
 .hd{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
 .hd.good{color:var(--good)}.hd.bad{color:var(--bad)}
 #hints{margin-top:10px;font-size:14px;min-height:22px}
@@ -40,8 +41,34 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 #hints a{color:var(--ac)}
 .next{margin-top:8px;width:100%;background:var(--ac);color:var(--bg);border:0}
 .row{font-size:14px;line-height:1.7}
+/* 畑 */
+.fieldwrap{margin-top:12px}
+.field{border-radius:6px;overflow:hidden;border:1px solid var(--ln);line-height:0}
+.field svg{width:100%;height:auto;display:block}
+.fcap{font-size:12px;color:var(--mu);margin-top:4px;text-align:right}
+.tt{font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;font-size:34px;font-weight:700;line-height:1.3;margin:0 0 4px}
+.intro{font-size:15px;line-height:1.9;margin:12px 0}
+.tone{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 4px;font-size:13px;color:var(--mu)}
+.tone button{padding:8px 12px}
+.tone button[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--bg)}
+.end{font-size:16px;line-height:1.9;margin:12px 0 4px}
+.endtone{width:auto;margin-top:6px;padding:8px 12px;font-size:13px}
+.sp{width:100%;margin-top:0}
+/* 畑のアニメーション */
+.pull,.grow,.wob,.pop{transform-box:fill-box}
+.pull{transform-origin:50% 100%;animation:pull .9s cubic-bezier(.5,0,.9,.6) forwards}
+.grow{transform-origin:50% 100%;animation:grow .7s .85s cubic-bezier(.2,1.6,.5,1) backwards}
+.wob{transform-origin:50% 100%;animation:wob .7s ease-in-out}
+.pop{transform-origin:50% 50%;animation:pop 1.1s ease-out forwards;opacity:0}
+@keyframes pull{0%{transform:translateY(0)}22%{transform:translateY(7px)}100%{transform:translateY(-130px) rotate(28deg);opacity:0}}
+@keyframes grow{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes wob{0%,100%{transform:rotate(0)}15%{transform:rotate(-7deg)}35%{transform:rotate(6deg)}55%{transform:rotate(-4deg)}75%{transform:rotate(3deg)}}
+@keyframes pop{0%{opacity:0;transform:translateY(8px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1.1)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px) scale(1)}}
+@media(prefers-reduced-motion:reduce){
+ .pull{display:none}.grow,.wob{animation:none}.pop{display:none}
+}
 </style></head><body><main>
-<h1>ローソク足クイズ:この銘柄はどれ?</h1>
+<h1>『カブの野望』</h1>
 <div id="app">読み込み中…</div>
 <p class="lbl">東証上場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額です。娯楽・学習用です。</p>
 </main>
@@ -49,7 +76,58 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 const $=s=>document.querySelector(s),ROUNDS=5,SC=[1,.5,.25],LM=58,RM=6;
 const GROUP={自動車:"製造業",機械:"製造業",電機:"製造業",半導体:"製造業",素材:"製造業",医薬:"製造業",食品:"製造業",銀行:"金融",保険:"金融",商社:"商社・小売",小売:"商社・小売"};
 const grp=s=>GROUP[s]||"サービス・インフラ";
-let D=[],Q=[],O=[],H=[],qi=0,score=0,hn=0,done=false,cur,asof="";
+/* ---- ストーリー文 ---- */
+const TXT={
+ comic:{name:"コミカル",
+  intro:"ここは大根が支配する畑。根菜の王者に、誰も逆らえなかった。ただ一人、かぶを心から愛する男を除いて。株(カブ)を当てるたびに、大根は引っこ抜かれ、蕪(カブ)が植わる。畑を、かぶで埋め尽くせ。",
+  pull:"スポッ!大根を引っこ抜いて、かぶを植えた!",small:"ヒントを使ったので、小ぶりなかぶが育った。",wrong:"大根はびくともしない。",
+  end:["大根の圧勝。畑は今日も真っ白。かぶは土の中で、静かに出番を待っている。",
+   "かぶ、1本。大根の群れの中でぽつんと揺れている。かわいい。でも勝負はこれからだ。",
+   "かぶが2本。大根が少しざわついてきた。主人公は鼻息が荒い。",
+   "かぶ3本、大根2本。畑の勢力図が逆転した。大根会議が緊急招集された。",
+   "かぶ4本。大根はあと1本。最後の大根は、そっと目を逸らした。",
+   "畑は、完全にかぶのものになった。主人公は泣いている。今夜の夕飯は、かぶのお味噌汁だ。"]},
+ epic:{name:"壮大な叙事詩",
+  intro:"かつて、畑は白き王・大根のものだった。千の根が大地を治め、誰も異を唱えなかった。ただ一人、かぶを愛する者を除いて。いま、野望の火が灯る。株(カブ)を読み解き、王座を奪え。",
+  pull:"王の根を引き抜いた。かぶが、大地に根を下ろす。",small:"ヒントに頼った勝利。かぶは、まだ小さい。",wrong:"王の根は深い。大地は、動かなかった。",
+  end:["白き王の治世は揺るがなかった。だが、かぶの根は土の下で、静かに力を蓄えている。",
+   "ひとつの種が、王国に根を下ろした。小さな、しかし消えることのない反乱の火。",
+   "二本のかぶが、風に葉を揺らす。王の軍勢に、初めて亀裂が走った。",
+   "勢力は拮抗した。畑の半ばを、かぶが握る。歴史が、音を立てて動き出す。",
+   "王国は崩れかけている。残る大根はただ一本。玉座は、もう目の前だ。",
+   "白き王は去り、畑は紫に染まった。野望は成就した。この大地は、今日からかぶのものである。"]}
+};
+/* ---- 畑のイラスト ---- */
+const daikon=`<g transform="translate(0,-4)"><path d="M0 68 C-19 52 -24 32 -13 18 C-6 33 -2 48 0 68Z" fill="#3f9a4a"/><path d="M0 68 C19 52 24 32 13 18 C6 33 2 48 0 68Z" fill="#3f9a4a"/><path d="M0 68 C-7 48 -4 28 0 10 C4 28 7 48 0 68Z" fill="#53b05d"/><path d="M-13 66 Q-15 92 -9 110 Q0 122 9 110 Q15 92 13 66Z" fill="#f6f4ea" stroke="#cfcab5" stroke-width="1.5"/></g>`;
+const turnip=`<g transform="translate(0,-2)"><path d="M0 80 C-14 66 -18 54 -10 44 C-5 56 -2 66 0 80Z" fill="#3f9a4a"/><path d="M0 80 C14 66 18 54 10 44 C5 56 2 66 0 80Z" fill="#3f9a4a"/><path d="M0 80 C-4 64 -2 50 0 38 C3 50 4 64 0 80Z" fill="#53b05d"/><path d="M0 104 C-17 104 -19 86 -11 79 C-6 74 6 74 11 79 C19 86 17 104 0 104Z" fill="#f4f0f6" stroke="#cdbfd2" stroke-width="1.2"/><path d="M-11 79 C-6 74 6 74 11 79 C13 82 14 85 14.5 88 C7 91 -7 91 -14.5 88 C-14 85 -13 82 -11 79Z" fill="#a84a9c"/></g>`;
+const PX=i=>50+100*i;
+function plot(i,st,an){
+ const x=PX(i),sm=`translate(0,96) scale(.66) translate(0,-96)`;
+ let g="";
+ if(an&&(an.kind==="t"||an.kind==="s")){
+  g=`<g transform="translate(${x},0)"><g class="pull">${daikon}</g></g>
+     <g transform="translate(${x},0)"><g class="grow"><g transform="${an.kind==="s"?sm:""}">${turnip}</g></g></g>
+     <text class="pop" x="${x}" y="36" text-anchor="middle" font-size="19" font-weight="700" fill="#fff" stroke="#b3261e" stroke-width="4" paint-order="stroke" font-family="sans-serif">スポッ!</text>`;
+ }else if(an&&an.kind==="w"){
+  g=`<g transform="translate(${x},0)"><g class="wob">${daikon}</g></g>`;
+ }else if(st==="d"){
+  g=`<g transform="translate(${x},0)">${daikon}</g>`;
+ }else{
+  g=`<g transform="translate(${x},0)"><g transform="${st==="s"?sm:""}">${turnip}</g></g>`;
+ }
+ return g;
+}
+function fieldHTML(F,an){
+ const nt=F.filter(s=>s!=="d").length,nd=F.length-nt;
+ let s="";
+ F.forEach((st,i)=>{s+=plot(i,st,an&&an.i===i?an:null)});
+ return `<div class="fieldwrap"><div class="field"><svg viewBox="0 0 500 130" role="img" aria-label="畑の様子。かぶ${nt}本、大根${nd}本">
+ <rect width="500" height="130" fill="#cfe6f2"/>${s}
+ <rect y="96" width="500" height="34" fill="#7a5232"/><rect y="96" width="500" height="5" fill="#8e6340"/>
+ </svg></div><div class="fcap">畑:かぶ ${nt}本 ・ 大根 ${nd}本</div></div>`;
+}
+/* ---- ゲーム本体 ---- */
+let D=[],Q=[],O=[],H=[],F=[],qi=0,score=0,hn=0,done=false,cur,asof="",tone="comic";
 const fmt=v=>v>=1e12?(v/1e12).toFixed(2)+"兆円":Math.round(v/1e8).toLocaleString()+"億円";
 const fmtAx=(v,st)=>v>=1e12?(v/1e12).toFixed(st%1e12===0?0:1)+"兆":Math.round(v/1e8).toLocaleString()+"億";
 const pt=n=>Number(n.toFixed(2));
@@ -61,9 +139,18 @@ fetch("stocks.json?t="+Date.now()).then(r=>r.json()).then(j=>{
  D=Object.entries(j).filter(([k,v])=>v.marketcap&&v.candles&&v.candles.length>20).map(([k,v])=>({code:k,...v}));
  if(D.length<4)throw 0;
  asof=D.map(d=>d.candles.at(-1)[0]).sort().at(-1);
- start();
+ title();
 }).catch(()=>{$("#app").textContent="stocks.json を読み込めませんでした。公開したサイト上で開き、データ更新が済んでいるか確認してください。"});
-function start(){Q=shuffle(D.slice()).slice(0,ROUNDS);qi=0;score=0;H=[];show()}
+function title(){
+ cur=null;
+ $("#app").innerHTML=`<div class="panel"><div class="tt">カブの野望</div>
+ <div class="lbl">株を当てて、蕪を植えろ。</div>
+ ${fieldHTML(Array(ROUNDS).fill("d"))}
+ <div class="intro" id="intro">${TXT[tone].intro}</div>
+ <div class="tone"><span>語り口:</span>${["comic","epic"].map(t=>`<button data-tone="${t}" aria-pressed="${t===tone}">${TXT[t].name}</button>`).join("")}</div>
+ <button class="next" id="go">畑に立つ</button></div>`;
+}
+function start(){Q=shuffle(D.slice()).slice(0,ROUNDS);qi=0;score=0;H=[];F=Array(ROUNDS).fill("d");show()}
 function hintHTML(){
  const c=cur.candles,p=(c.at(-1)[4]/c[0][4]-1)*100;
  const t=["この1年の騰落率:"+(p>=0?"+":"")+p.toFixed(0)+"%","業種の大分類:"+grp(cur.sector)];
@@ -76,8 +163,8 @@ function show(){
  <div class="panel"><div class="lbl">時価総額(${asof}時点)</div><div class="cap">${fmt(cur.marketcap)}</div>
  <canvas id="cv"></canvas><div id="tip">チャートをなぞると、その日の時価総額が見られます</div>
  <div class="opts">${O.map((o,i)=>`<button data-i="${i}">${o.name}</button>`).join("")}</div>
- <div class="res" id="res" hidden></div>
  <div id="hints">${hintHTML()}</div>
+ <div id="fb"><div id="fld">${fieldHTML(F)}</div><div class="res" id="res" hidden></div></div>
  <button class="next" id="nx" hidden></button></div>`;
  redraw();
  const cv=$("#cv"),c=cur.candles;
@@ -129,33 +216,48 @@ function redraw(){
  document.querySelectorAll("canvas.mini").forEach(m=>drawChart(m,H[+m.dataset.i].stock,false));
 }
 addEventListener("resize",redraw);
+function endHTML(){
+ const nt=F.filter(s=>s!=="d").length,t=TXT[tone],other=tone==="comic"?"epic":"comic";
+ return `<div class="end">${t.end[nt]}</div><button class="endtone" data-tone="${other}" data-endtone="1">「${TXT[other].name}」の語り口で読む</button>`;
+}
 $("#app").onclick=e=>{
  if(e.target.id==="hb"){e.preventDefault();if(hn<2&&!done){hn++;$("#hints").innerHTML=hintHTML()}return}
  const b=e.target.closest("button");if(!b)return;
+ if(b.dataset.tone){
+  tone=b.dataset.tone;
+  if(b.dataset.endtone){$("#endbox").innerHTML=endHTML()}
+  else{$("#intro").textContent=TXT[tone].intro;document.querySelectorAll(".tone button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tone===tone))}
+  return;
+ }
+ if(b.id==="go"){start();return}
  if(b.id==="nx"){qi++;qi<Q.length?show():end();return}
  if(b.id==="rs"){start();return}
  if(b.dataset.i===undefined||done)return;
- done=true;const pick=O[+b.dataset.i],right=pick===cur,p=right?SC[hn]:0;
+ done=true;const pick=O[+b.dataset.i],right=pick===cur,p=right?SC[hn]:0,T=TXT[tone];
  score+=p;H.push({stock:cur,pick,right,hn,p});
+ const kind=right?(hn?"s":"t"):"w";
+ if(right)F[qi]=kind;
+ $("#fld").innerHTML=fieldHTML(F,{i:qi,kind});
  document.querySelectorAll(".opts button").forEach((x,i)=>{x.disabled=true;if(O[i]===cur)x.classList.add("ok");else if(x===b)x.classList.add("ng")});
  $("#hints").innerHTML=hintHTML();
  const info=`${cur.name}(${cur.code}・${cur.sector})`;
  const res=$("#res");res.hidden=false;res.className="res "+(right?"good":"bad");
  res.innerHTML=mark(right,72)+`<div class="rt">`+(right
-  ?`<b>正解!</b><br>${info} +${p}点`
-  :`<b>不正解</b><br>正解は ${info}<br>あなたの回答:${pick.name}`)+`</div>`;
+  ?`<b>正解!</b><br>${info} +${p}点<div class="story">${T.pull}${hn?" "+T.small:""}</div>`
+  :`<b>不正解</b><br>正解は ${info}<br>あなたの回答:${pick.name}<div class="story">${T.wrong}</div>`)+`</div>`;
  const nx=$("#nx");nx.hidden=false;nx.textContent=qi+1<Q.length?"次の問題":"結果を見る";
- res.scrollIntoView({block:"nearest"});
+ $("#fb").scrollIntoView({block:"nearest"});
 };
 function end(){
  cur=null;
- $("#app").innerHTML=`<div class="panel item"><div class="lbl">結果</div><div class="cap">${pt(score)} / ${Q.length}点</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
+ $("#app").innerHTML=`<div class="panel item"><div class="lbl">結果</div><div class="cap">${pt(score)} / ${Q.length}点</div>
+ ${fieldHTML(F)}<div id="endbox">${endHTML()}</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
  H.map((h,i)=>`<div class="panel item"><div class="top"><span class="hd ${h.right?"good":"bad"}">${mark(h.right,36)}<span>第${i+1}問 ${h.right?"正解":"不正解"}</span></span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>
  <div class="lbl">時価総額(${asof}時点)</div><div class="cap sm">${fmt(h.stock.marketcap)}</div>
  <canvas class="mini" data-i="${i}"></canvas>
  <div class="row">あなたの回答:<b>${h.pick.name}</b></div>
  <div class="row">正解:<b>${h.stock.name}</b>(${h.stock.code}・${h.stock.sector})</div></div>`).join("")+
- `<button class="next" id="rs">もう一度あそぶ</button>`;
+ `<button class="next sp" id="rs">もう一度あそぶ</button>`;
  redraw();
 }
 </script></body></html>
