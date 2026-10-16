@@ -53,29 +53,44 @@ if os.path.exists("stocks.json"):
 # 時価総額 = 株数 × 直近の終値 で計算します。数字は「分割後」の株数にしてください。
 # 数字は決算資料やYahoo!ファイナンスの「発行済株式数」で確認して、必要なら直してください。
 SHARES = {
-    # キオクシア:2026年10月1日に1株→3株に分割。分割前は約5.39億株(私の記憶・要確認)×3
-    "285A": 1_617_000_000,
-    # 東京エレクトロン(8035)は1→5、東京海上HD(8766)は1→15の分割をしています。
-    # 実行ログの「株数」が分割前のままなら、分割後の株数をここに追加してください。
+    # 2026年10月1日に株式分割した銘柄。株数は2026-10-16時点の発行済株式数(Yahoo!ファイナンスで確認)
+    "285A": 1_645_917_102,    # キオクシア(1株→3株)
+    "8035": 2_340_163_665,    # 東京エレクトロン(1株→5株)
+    "8766": 29_010_000_000,   # 東京海上HD(1株→15株)
+    # 増資・自社株買い・分割などで株数が変わったら、ここの数字を更新してください。
 }
 
 def market_cap(code, t, last_close):
-    if code in SHARES:
-        return SHARES[code] * last_close
-    try:
-        v = t.fast_info["market_cap"]
-        if v: return float(v)
-    except Exception:
-        pass
+    """(使う時価総額, 確認用のメモ) を返します。
+    yfinance には時価総額が2種類あります。
+      info["marketCap"]       … Yahooが提供している時価総額(こちらを優先して使います)
+      fast_info["market_cap"] … yfinanceが「終値×株数」で計算した値(株数が古いとずれます)
+    """
+    mc_info = mc_fast = None
     try:
         v = t.info.get("marketCap")
-        if v: return float(v)
+        if v: mc_info = float(v)
     except Exception:
         pass
     try:
-        return float(t.fast_info["shares"]) * last_close
+        v = t.fast_info["market_cap"]
+        if v: mc_fast = float(v)
     except Exception:
-        return None
+        pass
+    note = ""
+    if mc_info: note += " info=%.2f兆" % (mc_info / 1e12)
+    if mc_fast: note += " fast=%.2f兆" % (mc_fast / 1e12)
+    if mc_info and mc_fast and max(mc_info, mc_fast) / min(mc_info, mc_fast) > 1.2:
+        note += " ★2つの値が大きく違います"
+    if code in SHARES:
+        return SHARES[code] * last_close, " [手動の株数を使用]" + note
+    mc = mc_info or mc_fast
+    if not mc:
+        try:
+            mc = float(t.fast_info["shares"]) * last_close
+        except Exception:
+            mc = None
+    return mc, note
 
 result = {}
 for code, (name, sector) in STOCKS.items():
@@ -86,14 +101,14 @@ for code, (name, sector) in STOCKS.items():
                     round(r.Low, 1), round(r.Close, 1)] for d, r in df.iterrows()]
         if len(candles) < 20:
             raise ValueError("データ不足")
-        mc = market_cap(code, t, candles[-1][4])
+        mc, note = market_cap(code, t, candles[-1][4])
         result[code] = {"name": name, "sector": sector,
                         "marketcap": mc, "candles": candles}
         # 確認用:実際の株価・時価総額と見比べられるように表示します
         if mc:
             print("OK", code, name, "終値", candles[-1][4],
                   "時価総額 %.2f兆円" % (mc / 1e12),
-                  "(株数 %.0f百万株)" % (mc / candles[-1][4] / 1e6))
+                  "(株数 %.0f百万株)" % (mc / candles[-1][4] / 1e6) + note)
         else:
             print("OK(時価総額なし)", code, name)
     except Exception as e:
