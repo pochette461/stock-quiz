@@ -49,7 +49,19 @@ if os.path.exists("stocks.json"):
     except Exception:
         pass
 
-def market_cap(t, last_close):
+# 発行済株式数を手動で指定したい銘柄(株式分割のあとなどで、yfinance の時価総額がずれる銘柄用)
+# 時価総額 = 株数 × 直近の終値 で計算します。数字は「分割後」の株数にしてください。
+# 数字は決算資料やYahoo!ファイナンスの「発行済株式数」で確認して、必要なら直してください。
+SHARES = {
+    # キオクシア:2026年10月1日に1株→3株に分割。分割前は約5.39億株(私の記憶・要確認)×3
+    "285A": 1_617_000_000,
+    # 東京エレクトロン(8035)は1→5、東京海上HD(8766)は1→15の分割をしています。
+    # 実行ログの「株数」が分割前のままなら、分割後の株数をここに追加してください。
+}
+
+def market_cap(code, t, last_close):
+    if code in SHARES:
+        return SHARES[code] * last_close
     try:
         v = t.fast_info["market_cap"]
         if v: return float(v)
@@ -74,9 +86,16 @@ for code, (name, sector) in STOCKS.items():
                     round(r.Low, 1), round(r.Close, 1)] for d, r in df.iterrows()]
         if len(candles) < 20:
             raise ValueError("データ不足")
+        mc = market_cap(code, t, candles[-1][4])
         result[code] = {"name": name, "sector": sector,
-                        "marketcap": market_cap(t, candles[-1][4]), "candles": candles}
-        print("OK", code, name)
+                        "marketcap": mc, "candles": candles}
+        # 確認用:実際の株価・時価総額と見比べられるように表示します
+        if mc:
+            print("OK", code, name, "終値", candles[-1][4],
+                  "時価総額 %.2f兆円" % (mc / 1e12),
+                  "(株数 %.0f百万株)" % (mc / candles[-1][4] / 1e6))
+        else:
+            print("OK(時価総額なし)", code, name)
     except Exception as e:
         print("NG", code, name, e)
         if code in old:
