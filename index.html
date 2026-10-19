@@ -8,15 +8,19 @@
 *{box-sizing:border-box}
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;justify-content:center}
 main{width:100%;max-width:720px}
-h1{font-size:20px;margin:0 0 12px}
+.site{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin:0 0 12px}
+.site h1{font-size:20px;margin:0}
+.site .sub{font-size:13px;color:var(--mu)}
 .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px;color:var(--mu)}
+.auto{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer}
+.auto input{width:16px;height:16px;margin:0;cursor:pointer}
 .panel{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:16px}
 .item{margin-bottom:12px}
 .lbl{font-size:12px;color:var(--mu)}
 .cap{font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;font-size:40px;font-weight:700;line-height:1.2;margin:2px 0 10px}
 .cap.sm{font-size:24px;margin-bottom:8px}
 canvas{width:100%;display:block}
-#cv{height:300px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+#cv{height:340px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
 .mini{height:90px;border:1px solid var(--ln);margin-bottom:8px}
 #tip{font-size:12px;color:var(--mu);margin:6px 0 0;min-height:18px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
@@ -39,23 +43,27 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 #hints{margin-top:10px;font-size:14px;min-height:22px}
 #hints div{margin-bottom:2px}
 #hints a{color:var(--ac)}
-.next{margin-top:8px;width:100%;background:var(--ac);color:var(--bg);border:0}
+.next{position:relative;overflow:hidden;margin-top:8px;width:100%;background:var(--ac);color:var(--bg);border:0}
+.next .bar{display:none;position:absolute;left:0;bottom:0;width:100%;height:4px;background:rgba(255,255,255,.6);transform-origin:left;animation:cd var(--d,3000ms) linear forwards}
+.next.auto-on .bar{display:block}
+@keyframes cd{to{transform:scaleX(0)}}
 .row{font-size:14px;line-height:1.7}
+/* 結果画面:不正解のときは、選んだ銘柄と正解の銘柄のチャートを並べる */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.pair{grid-template-columns:1fr}}
+.col .tag{font-size:12px;font-weight:700;margin-bottom:2px}
+.col.wrong .tag{color:var(--bad)}.col.ok .tag{color:var(--good)}
+.col.wrong .mini{border-color:var(--bad)}.col.ok .mini{border-color:var(--good)}
 /* 畑 */
 .fieldwrap{margin-top:12px}
 .field{border-radius:6px;overflow:hidden;border:1px solid var(--ln);line-height:0}
 .field svg{width:100%;height:auto;display:block}
 .fcap{font-size:12px;color:var(--mu);margin-top:4px;text-align:right}
-.tt{font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;font-size:34px;font-weight:700;line-height:1.3;margin:0 0 4px}
 .intro{font-size:15px;line-height:1.9;margin:12px 0}
-.tone{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 4px;font-size:13px;color:var(--mu)}
-.tone button{padding:8px 12px}
-.tone button[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--bg)}
 .end{font-size:16px;line-height:1.9;margin:12px 0 4px}
-.endtone{width:auto;margin-top:6px;padding:8px 12px;font-size:13px}
 .sp{width:100%;margin-top:0}
 /* 畑のアニメーション */
-.pull,.grow,.wob,.pop{transform-box:fill-box}
+.pull,.grow,.wob,.pop,.mv,.bob,.la,.ra,.head,.tear,.star{transform-box:fill-box}
 .pull{transform-origin:50% 100%;animation:pull .9s cubic-bezier(.5,0,.9,.6) forwards}
 .grow{transform-origin:50% 100%;animation:grow .7s .85s cubic-bezier(.2,1.6,.5,1) backwards}
 .wob{transform-origin:50% 100%;animation:wob .7s ease-in-out}
@@ -64,43 +72,83 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 @keyframes grow{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes wob{0%,100%{transform:rotate(0)}15%{transform:rotate(-7deg)}35%{transform:rotate(6deg)}55%{transform:rotate(-4deg)}75%{transform:rotate(3deg)}}
 @keyframes pop{0%{opacity:0;transform:translateY(8px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1.1)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px) scale(1)}}
+/* 畑に立つ農夫(ブロックを組んだような絵) */
+.man{shape-rendering:crispEdges}
+.mv.walk{animation:walkin .8s ease-out}
+.mv.cheer{animation:jump .55s ease-out infinite}
+.mv.sad{animation:shake .5s ease-in-out}
+.hd .mv.cheer{animation-duration:.9s}
+.bob{animation:bob 1.6s ease-in-out infinite alternate}
+.la,.ra{transform-origin:50% 0%}
+.cheer .la{transform:rotate(150deg)}
+.cheer .ra{transform:rotate(-150deg)}
+.head{transform-origin:50% 100%}
+.sad .head{transform:translateY(3px) rotate(-5deg)}
+.tear{animation:tear 1.3s ease-in infinite}
+.tear.t2{animation-delay:.6s}
+.star{transform-origin:50% 50%;animation:twinkle .8s ease-in-out infinite alternate}
+.bubble{animation:fadein .3s 1s backwards}
+@keyframes walkin{from{transform:translateX(var(--dx))}to{transform:translateX(0)}}
+@keyframes jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-1.5px)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes tear{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(12px);opacity:0}}
+@keyframes twinkle{from{transform:scale(.4);opacity:.4}to{transform:scale(1.15);opacity:1}}
 @media(prefers-reduced-motion:reduce){
- .pull{display:none}.grow,.wob{animation:none}.pop{display:none}
+ .pull{display:none}.grow,.wob,.mv,.bob,.bubble,.tear,.star,.next .bar{animation:none}.pop{display:none}
 }
 </style></head><body><main>
-<h1>『カブの野望』</h1>
+<header class="site"><h1>『カブの野望』</h1><span class="sub">時価総額と株価(ローソク足)から、銘柄をあてるゲーム</span></header>
 <div id="app">読み込み中…</div>
-<p class="lbl">東証上場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額です。娯楽・学習用です。</p>
+<p class="lbl">東証上場の主要銘柄・日足1年分。ローソク足は上昇が赤、下落が緑。縦軸は株価ではなく時価総額で、下の棒グラフは出来高(取引された株数)です。娯楽・学習用です。</p>
 </main>
 <script>
-const $=s=>document.querySelector(s),ROUNDS=5,SC=[1,.5,.25],LM=58,RM=6;
+const $=s=>document.querySelector(s),ROUNDS=5,SC=[1,.5,.25],LM=58,RM=6,DELAY_OK=3000,DELAY_NG=4500;
 const GROUP={自動車:"製造業",機械:"製造業",電機:"製造業",半導体:"製造業",素材:"製造業",医薬:"製造業",食品:"製造業",銀行:"金融",保険:"金融",商社:"商社・小売",小売:"商社・小売"};
 const grp=s=>GROUP[s]||"サービス・インフラ";
 /* ---- ストーリー文 ---- */
 const TXT={
- comic:{name:"コミカル",
-  intro:"ここは大根が支配する畑。根菜の王者に、誰も逆らえなかった。ただ一人、かぶを心から愛する男を除いて。株(カブ)を当てるたびに、大根は引っこ抜かれ、蕪(カブ)が植わる。畑を、かぶで埋め尽くせ。",
-  pull:"スポッ!大根を引っこ抜いて、かぶを植えた!",small:"ヒントを使ったので、小ぶりなかぶが育った。",wrong:"大根はびくともしない。",
-  end:["大根の圧勝。畑は今日も真っ白。かぶは土の中で、静かに出番を待っている。",
-   "かぶ、1本。大根の群れの中でぽつんと揺れている。かわいい。でも勝負はこれからだ。",
-   "かぶが2本。大根が少しざわついてきた。主人公は鼻息が荒い。",
-   "かぶ3本、大根2本。畑の勢力図が逆転した。大根会議が緊急招集された。",
-   "かぶ4本。大根はあと1本。最後の大根は、そっと目を逸らした。",
-   "畑は、完全にかぶのものになった。主人公は泣いている。今夜の夕飯は、かぶのお味噌汁だ。"]},
- epic:{name:"壮大な叙事詩",
-  intro:"かつて、畑は白き王・大根のものだった。千の根が大地を治め、誰も異を唱えなかった。ただ一人、かぶを愛する者を除いて。いま、野望の火が灯る。株(カブ)を読み解き、王座を奪え。",
-  pull:"王の根を引き抜いた。かぶが、大地に根を下ろす。",small:"ヒントに頼った勝利。かぶは、まだ小さい。",wrong:"王の根は深い。大地は、動かなかった。",
-  end:["白き王の治世は揺るがなかった。だが、かぶの根は土の下で、静かに力を蓄えている。",
-   "ひとつの種が、王国に根を下ろした。小さな、しかし消えることのない反乱の火。",
-   "二本のかぶが、風に葉を揺らす。王の軍勢に、初めて亀裂が走った。",
-   "勢力は拮抗した。畑の半ばを、かぶが握る。歴史が、音を立てて動き出す。",
-   "王国は崩れかけている。残る大根はただ一本。玉座は、もう目の前だ。",
-   "白き王は去り、畑は紫に染まった。野望は成就した。この大地は、今日からかぶのものである。"]}
+ intro:"ここは大根が支配する畑。根菜の王者に、誰も逆らえなかった。ただ一人、かぶを心から愛する男を除いて。株(カブ)を当てるたびに、大根は引っこ抜かれ、蕪(カブ)が植わる。畑を、かぶで埋め尽くせ。",
+ pull:"スポッ!大根を引っこ抜いて、かぶを植えた!",small:"ヒントを使ったので、小ぶりなかぶが育った。",wrong:"大根はびくともしない。",
+ end:["大根の圧勝。畑は今日も真っ白。かぶは土の中で、静かに出番を待っている。",
+  "かぶ、1本。大根の群れの中でぽつんと揺れている。かわいい。でも勝負はこれからだ。",
+  "かぶが2本。大根が少しざわついてきた。主人公は鼻息が荒い。",
+  "かぶ3本、大根2本。畑の勢力図が逆転した。大根会議が緊急招集された。",
+  "かぶ4本。大根はあと1本。最後の大根は、そっと目を逸らした。",
+  "畑は、完全にかぶのものになった。主人公は泣いている。今夜の夕飯は、かぶのお味噌汁だ。"]
 };
 /* ---- 畑のイラスト ---- */
 const daikon=`<g transform="translate(0,-4)"><path d="M0 68 C-19 52 -24 32 -13 18 C-6 33 -2 48 0 68Z" fill="#3f9a4a"/><path d="M0 68 C19 52 24 32 13 18 C6 33 2 48 0 68Z" fill="#3f9a4a"/><path d="M0 68 C-7 48 -4 28 0 10 C4 28 7 48 0 68Z" fill="#53b05d"/><path d="M-13 66 Q-15 92 -9 110 Q0 122 9 110 Q15 92 13 66Z" fill="#f6f4ea" stroke="#cfcab5" stroke-width="1.5"/></g>`;
 const turnip=`<g transform="translate(0,-2)"><path d="M0 80 C-14 66 -18 54 -10 44 C-5 56 -2 66 0 80Z" fill="#3f9a4a"/><path d="M0 80 C14 66 18 54 10 44 C5 56 2 66 0 80Z" fill="#3f9a4a"/><path d="M0 80 C-4 64 -2 50 0 38 C3 50 4 64 0 80Z" fill="#53b05d"/><path d="M0 104 C-17 104 -19 86 -11 79 C-6 74 6 74 11 79 C19 86 17 104 0 104Z" fill="#f4f0f6" stroke="#cdbfd2" stroke-width="1.2"/><path d="M-11 79 C-6 74 6 74 11 79 C13 82 14 85 14.5 88 C7 91 -7 91 -14.5 88 C-14 85 -13 82 -11 79Z" fill="#a84a9c"/></g>`;
 const PX=i=>50+100*i;
+const manX=i=>i===ROUNDS-1?PX(i)-40:PX(i)+40;
+/* 農夫のパーツ。mode: idle / walk(歩く) / cheer(喜ぶ) / sad(悲しむ) */
+function manParts(mode,stars){
+ const green="#3d6b34",shirt="#c44536",skin="#e0b48c",ink="#2b2118";
+ const legs=`<rect x="-8" y="-18" width="7" height="14" fill="${green}"/><rect x="1" y="-18" width="7" height="14" fill="${green}"/><rect x="-8" y="-4" width="7" height="4" fill="#5a3b22"/><rect x="1" y="-4" width="7" height="4" fill="#5a3b22"/>`;
+ const body=`<rect x="-8" y="-38" width="16" height="20" fill="${shirt}"/><rect x="-6" y="-31" width="12" height="13" fill="${green}"/><rect x="-6" y="-38" width="3" height="7" fill="${green}"/><rect x="3" y="-38" width="3" height="7" fill="${green}"/>`;
+ const arms=`<g class="la"><rect x="-14" y="-38" width="6" height="11" fill="${shirt}"/><rect x="-14" y="-27" width="6" height="9" fill="${skin}"/></g><g class="ra"><rect x="8" y="-38" width="6" height="11" fill="${shirt}"/><rect x="8" y="-27" width="6" height="9" fill="${skin}"/></g>`;
+ let face;
+ if(mode==="cheer"){
+  face=`<g fill="${ink}"><rect x="-6" y="-48" width="4" height="1.6"/><rect x="-6.8" y="-46.6" width="1.6" height="1.8"/><rect x="-2.8" y="-46.6" width="1.6" height="1.8"/><rect x="2" y="-48" width="4" height="1.6"/><rect x="1.2" y="-46.6" width="1.6" height="1.8"/><rect x="5.2" y="-46.6" width="1.6" height="1.8"/></g><rect x="-3.5" y="-43.6" width="7" height="3.8" fill="#7a2a22"/><rect x="-2" y="-41.8" width="4" height="1.8" fill="#e0736a"/><rect x="-7.6" y="-44.4" width="2.6" height="2" fill="#f0a090"/><rect x="5" y="-44.4" width="2.6" height="2" fill="#f0a090"/>`;
+ }else if(mode==="sad"){
+  face=`<rect x="-6" y="-46.6" width="3" height="2.4" fill="${ink}"/><rect x="3" y="-46.6" width="3" height="2.4" fill="${ink}"/><rect x="-7" y="-50.4" width="5" height="1.4" fill="${ink}" transform="rotate(-18 -4.5 -49.7)"/><rect x="2" y="-50.4" width="5" height="1.4" fill="${ink}" transform="rotate(18 4.5 -49.7)"/><rect x="-2.5" y="-41.6" width="5" height="1.6" fill="#8a3b2c"/><rect x="-4.2" y="-40" width="1.8" height="1.8" fill="#8a3b2c"/><rect x="2.4" y="-40" width="1.8" height="1.8" fill="#8a3b2c"/><rect class="tear" x="-6.4" y="-44" width="1.8" height="3" fill="#6ec1f2"/><rect class="tear t2" x="4.6" y="-44" width="1.8" height="3" fill="#6ec1f2"/>`;
+ }else{
+  face=`<rect x="-5" y="-47" width="2.5" height="2.5" fill="${ink}"/><rect x="2.5" y="-47" width="2.5" height="2.5" fill="${ink}"/><rect x="-3" y="-42" width="6" height="1.8" fill="#8a3b2c"/>`;
+ }
+ const head=`<rect x="-8" y="-52" width="16" height="14" fill="${skin}"/>${face}<rect x="-12" y="-54" width="24" height="3" fill="#c9a23c"/><rect x="-6" y="-60" width="12" height="6" fill="#e3c25a"/>`;
+ const star=(x,y,d)=>`<g transform="translate(${x},${y})"><path class="star" style="animation-delay:${d}s" d="M0 -4.5L1.3 -1.3L4.5 0L1.3 1.3L0 4.5L-1.3 1.3L-4.5 0L-1.3 -1.3Z" fill="#f7c948"/></g>`;
+ const sp=mode==="cheer"&&stars?star(-26,-62,0)+star(26,-58,.25)+star(-27,-42,.5)+star(27,-38,.15):"";
+ return `<g class="bob">${legs}${body}${arms}<g class="head">${head}</g></g>${sp}`;
+}
+function manSVG(m){
+ const x=manX(m.i),dx=m.mode==="walk"&&m.i>0?manX(m.i-1)-x:0;
+ const say=m.say?`<g class="bubble" transform="translate(0,-86)"><rect x="-31" y="-16" width="62" height="18" rx="4" fill="#fff" stroke="#7a6a58"/><path d="M-4 2 L0 8 L4 2Z" fill="#fff" stroke="#7a6a58"/><text x="0" y="-3" text-anchor="middle" font-size="11" font-weight="700" fill="#3a2f26" font-family="sans-serif">${m.say}</text></g>`:"";
+ return `<g class="man" transform="translate(${x},124)"><g class="mv ${m.mode}" style="--dx:${dx}px"><g transform="scale(1.2)">${manParts(m.mode,true)}</g></g><g style="shape-rendering:auto">${say}</g></g>`;
+}
+/* 結果画面の見出しに付ける小さな農夫 */
+function miniMan(mode){return `<svg class="man" viewBox="-20 -66 40 68" width="30" height="51" aria-hidden="true"><g class="mv ${mode}" style="--dx:0px">${manParts(mode,false)}</g></svg>`}
 function plot(i,st,an){
  const x=PX(i),sm=`translate(0,96) scale(.66) translate(0,-96)`;
  let g="";
@@ -117,19 +165,24 @@ function plot(i,st,an){
  }
  return g;
 }
-function fieldHTML(F,an){
+function fieldHTML(F,an,man){
  const nt=F.filter(s=>s!=="d").length,nd=F.length-nt;
  let s="";
  F.forEach((st,i)=>{s+=plot(i,st,an&&an.i===i?an:null)});
- return `<div class="fieldwrap"><div class="field"><svg viewBox="0 0 500 130" role="img" aria-label="畑の様子。かぶ${nt}本、大根${nd}本">
+ return `<div class="fieldwrap"><div class="field"><svg viewBox="0 0 500 130" role="img" aria-label="畑の様子。かぶ${nt}本、大根${nd}本。農夫が立っている">
  <rect width="500" height="130" fill="#cfe6f2"/>${s}
- <rect y="96" width="500" height="34" fill="#7a5232"/><rect y="96" width="500" height="5" fill="#8e6340"/>
+ <rect y="96" width="500" height="34" fill="#7a5232"/><rect y="96" width="500" height="5" fill="#8e6340"/>${man?manSVG(man):""}
  </svg></div><div class="fcap">畑:かぶ ${nt}本 ・ 大根 ${nd}本</div></div>`;
 }
 /* ---- ゲーム本体 ---- */
-let D=[],Q=[],O=[],H=[],F=[],qi=0,score=0,hn=0,done=false,cur,asof="",tone="comic";
+let D=[],Q=[],O=[],H=[],F=[],qi=0,score=0,hn=0,done=false,cur,asof="",timer=null,curMs=0,shownAt=0,auto=loadAuto();
+function loadAuto(){try{return localStorage.getItem("kabu_auto")!=="0"}catch(e){return true}}
+function saveAuto(v){try{localStorage.setItem("kabu_auto",v?"1":"0")}catch(e){}}
 const fmt=v=>v>=1e12?(v/1e12).toFixed(2)+"兆円":Math.round(v/1e8).toLocaleString()+"億円";
 const fmtAx=(v,st)=>v>=1e12?(v/1e12).toFixed(st%1e12===0?0:1)+"兆":Math.round(v/1e8).toLocaleString()+"億";
+const fmtVolAx=v=>v>=1e8?(v/1e8)+"億株":v>=1e4?Math.round(v/1e4).toLocaleString()+"万株":v+"株";
+const fmtVol=v=>v>=1e8?(v/1e8).toFixed(2)+"億株":v>=1e4?Math.round(v/1e4).toLocaleString()+"万株":v.toLocaleString()+"株";
+const niceMax=v=>{const m=Math.pow(10,Math.floor(Math.log10(v))),n=v/m;return(n<=1?1:n<=2?2:n<=5?5:10)*m};
 const pt=n=>Number(n.toFixed(2));
 const mark=(ok,sz)=>ok
  ?`<svg viewBox="0 0 64 64" width="${sz}" height="${sz}" role="img" aria-label="正解"><circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="8"/></svg>`
@@ -143,11 +196,9 @@ fetch("stocks.json?t="+Date.now()).then(r=>r.json()).then(j=>{
 }).catch(()=>{$("#app").textContent="stocks.json を読み込めませんでした。公開したサイト上で開き、データ更新が済んでいるか確認してください。"});
 function title(){
  cur=null;
- $("#app").innerHTML=`<div class="panel"><div class="tt">カブの野望</div>
- <div class="lbl">株を当てて、蕪を植えろ。</div>
- ${fieldHTML(Array(ROUNDS).fill("d"))}
- <div class="intro" id="intro">${TXT[tone].intro}</div>
- <div class="tone"><span>語り口:</span>${["comic","epic"].map(t=>`<button data-tone="${t}" aria-pressed="${t===tone}">${TXT[t].name}</button>`).join("")}</div>
+ $("#app").innerHTML=`<div class="panel"><div class="lbl">株を当てて、蕪を植えろ。</div>
+ ${fieldHTML(Array(ROUNDS).fill("d"),null,{i:0,mode:"idle"})}
+ <div class="intro">${TXT.intro}</div>
  <button class="next" id="go">畑に立つ</button></div>`;
 }
 function start(){Q=shuffle(D.slice()).slice(0,ROUNDS);qi=0;score=0;H=[];F=Array(ROUNDS).fill("d");show()}
@@ -156,22 +207,34 @@ function hintHTML(){
  const t=["この1年の騰落率:"+(p>=0?"+":"")+p.toFixed(0)+"%","業種の大分類:"+grp(cur.sector)];
  return t.slice(0,hn).map((s,i)=>`<div>ヒント${i+1}:${s}</div>`).join("")+(hn<2&&!done?`<a href="#" id="hb">ヒント${hn+1}を見る(正解で${SC[hn+1]}点)</a>`:"");
 }
+/* ---- 次の問題へ(自動送り) ---- */
+function clearT(){if(timer){clearTimeout(timer);timer=null}}
+function nxLabel(){const last=qi+1>=Q.length;return auto?(last?"今すぐ結果を見る":"今すぐ次の問題へ"):(last?"結果を見る":"次の問題")}
+function arm(){
+ clearT();const nx=$("#nx");if(!nx||!done)return;
+ $("#nxt").textContent=nxLabel();
+ nx.style.setProperty("--d",curMs+"ms");nx.classList.toggle("auto-on",auto);
+ if(auto)timer=setTimeout(advance,curMs);
+}
+function advance(){clearT();qi++;qi<Q.length?show():end();window.scrollTo(0,0)}
 function show(){
- cur=Q[qi];done=false;hn=0;
+ clearT();
+ cur=Q[qi];done=false;hn=0;shownAt=Date.now();
  O=shuffle([cur,...shuffle(D.filter(d=>d!==cur)).slice(0,3)]);
- $("#app").innerHTML=`<div class="top"><span>第${qi+1}問 / ${Q.length}</span><span>スコア ${pt(score)}</span></div>
+ const hasV=cur.candles[0].length>5;
+ $("#app").innerHTML=`<div class="top"><span>第${qi+1}問 / ${Q.length}</span><label class="auto"><input type="checkbox" id="auto"${auto?" checked":""}>自動で次へ</label><span>スコア ${pt(score)}</span></div>
  <div class="panel"><div class="lbl">時価総額(${asof}時点)</div><div class="cap">${fmt(cur.marketcap)}</div>
- <canvas id="cv"></canvas><div id="tip">チャートをなぞると、その日の時価総額が見られます</div>
+ <canvas id="cv"></canvas><div id="tip">チャートをなぞると、その日の時価総額${hasV?"と出来高":""}が見られます</div>
  <div class="opts">${O.map((o,i)=>`<button data-i="${i}">${o.name}</button>`).join("")}</div>
  <div id="hints">${hintHTML()}</div>
- <div id="fb"><div id="fld">${fieldHTML(F)}</div><div class="res" id="res" hidden></div></div>
- <button class="next" id="nx" hidden></button></div>`;
+ <div id="fb"><div id="fld">${fieldHTML(F,null,{i:qi,mode:qi?"walk":"idle"})}</div><div class="res" id="res" hidden></div></div>
+ <button class="next" id="nx" hidden><span class="bar"></span><span id="nxt"></span></button></div>`;
  redraw();
  const cv=$("#cv"),c=cur.candles;
  cv.onpointermove=e=>{
   const b=cv.getBoundingClientRect(),i=Math.min(c.length-1,Math.max(0,((e.clientX-b.left-LM)/(b.width-LM-RM)*c.length)|0));
   const k=c[i],ch=i?(k[4]/c[i-1][4]-1)*100:0;
-  $("#tip").textContent=`${k[0]}  前日比 ${ch>=0?"+":""}${ch.toFixed(1)}%  時価総額 ${fmt(k[4]*cur.marketcap/c.at(-1)[4])}`;
+  $("#tip").textContent=`${k[0]}  前日比 ${ch>=0?"+":""}${ch.toFixed(1)}%  時価総額 ${fmt(k[4]*cur.marketcap/c.at(-1)[4])}`+(hasV?`  出来高 ${fmtVol(k[5])}`:"");
  };
 }
 function drawChart(cv,s,full){
@@ -180,9 +243,10 @@ function drawChart(cv,s,full){
  const x=cv.getContext("2d");x.setTransform(r,0,0,r,0,0);
  const st=getComputedStyle(document.documentElement),mu=st.getPropertyValue("--mu").trim(),ln=st.getPropertyValue("--ln").trim();
  const k=s.marketcap/c.at(-1)[4];
- const L=full?LM:6,R=RM,T=8,B=full?24:6;
+ const hasV=full&&c[0].length>5;
+ const L=full?LM:6,R=RM,T=8,B=full?24:6,VH=hasV?58:0,GAP=hasV?10:0;
  const lo=Math.min(...c.map(q=>q[3])),hi=Math.max(...c.map(q=>q[2]));
- const pw=W-L-R,ph=Ht-T-B,bw=pw/c.length;
+ const pw=W-L-R,ph=Ht-T-B-VH-GAP,bw=pw/c.length;
  const y=v=>T+(hi-v)/(hi-lo)*ph;
  x.font="11px sans-serif";
  if(full){
@@ -210,54 +274,73 @@ function drawChart(cv,s,full){
   x.lineWidth=1;x.beginPath();x.moveTo(cx,y(q[2]));x.lineTo(cx,y(q[3]));x.stroke();
   x.fillRect(cx-bw*.35,y(Math.max(q[1],q[4])),bw*.7,Math.max(1,Math.abs(y(q[1])-y(q[4]))));
  });
+ if(hasV){
+  const vm=niceMax(Math.max(...c.map(q=>q[5]),1)),base=Ht-B,top=base-VH;
+  x.strokeStyle=ln;x.lineWidth=.5;x.beginPath();x.moveTo(L,top);x.lineTo(W-R,top);x.moveTo(L,base);x.lineTo(W-R,base);x.stroke();
+  x.textAlign="right";x.textBaseline="middle";x.fillStyle=mu;x.fillText(fmtVolAx(vm),L-6,top+5);
+  x.textBaseline="bottom";x.fillText("0",L-6,base);
+  x.textAlign="left";x.textBaseline="top";x.font="10px sans-serif";x.fillText("出来高",L+4,top+3);
+  x.globalAlpha=.6;
+  c.forEach((q,i)=>{
+   const cx=L+(i+.5)*bw,h=Math.max(.5,q[5]/vm*VH);
+   x.fillStyle=q[4]>=q[1]?"#d13b34":"#1f8a64";
+   x.fillRect(cx-bw*.35,base-h,bw*.7,h);
+  });
+  x.globalAlpha=1;
+ }
 }
 function redraw(){
  const cv=$("#cv");if(cv&&cur)drawChart(cv,cur,true);
- document.querySelectorAll("canvas.mini").forEach(m=>drawChart(m,H[+m.dataset.i].stock,false));
+ /* 結果画面:data-w="p" は選んだ銘柄、"a" は正解の銘柄 */
+ document.querySelectorAll("canvas.mini").forEach(m=>{const h=H[+m.dataset.i];drawChart(m,m.dataset.w==="p"?h.pick:h.stock,false)});
 }
 addEventListener("resize",redraw);
-function endHTML(){
- const nt=F.filter(s=>s!=="d").length,t=TXT[tone],other=tone==="comic"?"epic":"comic";
- return `<div class="end">${t.end[nt]}</div><button class="endtone" data-tone="${other}" data-endtone="1">「${TXT[other].name}」の語り口で読む</button>`;
-}
+$("#app").onchange=e=>{
+ if(e.target.id!=="auto")return;
+ auto=e.target.checked;saveAuto(auto);
+ if(done)arm();else clearT();
+};
 $("#app").onclick=e=>{
  if(e.target.id==="hb"){e.preventDefault();if(hn<2&&!done){hn++;$("#hints").innerHTML=hintHTML()}return}
  const b=e.target.closest("button");if(!b)return;
- if(b.dataset.tone){
-  tone=b.dataset.tone;
-  if(b.dataset.endtone){$("#endbox").innerHTML=endHTML()}
-  else{$("#intro").textContent=TXT[tone].intro;document.querySelectorAll(".tone button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tone===tone))}
-  return;
- }
  if(b.id==="go"){start();return}
- if(b.id==="nx"){qi++;qi<Q.length?show():end();return}
- if(b.id==="rs"){start();return}
+ if(b.id==="nx"){advance();return}
+ if(b.id==="rs"||b.id==="rs2"){start();window.scrollTo(0,0);return}
  if(b.dataset.i===undefined||done)return;
- done=true;const pick=O[+b.dataset.i],right=pick===cur,p=right?SC[hn]:0,T=TXT[tone];
+ if(Date.now()-shownAt<500)return; /* 自動で切り替わった直後の押し間違いを防ぐ */
+ done=true;const pick=O[+b.dataset.i],right=pick===cur,p=right?SC[hn]:0;
  score+=p;H.push({stock:cur,pick,right,hn,p});
  const kind=right?(hn?"s":"t"):"w";
  if(right)F[qi]=kind;
- $("#fld").innerHTML=fieldHTML(F,{i:qi,kind});
+ $("#fld").innerHTML=fieldHTML(F,{i:qi,kind},{i:qi,mode:right?"cheer":"sad",say:right?"かぶ最高!":"大根め…"});
  document.querySelectorAll(".opts button").forEach((x,i)=>{x.disabled=true;if(O[i]===cur)x.classList.add("ok");else if(x===b)x.classList.add("ng")});
  $("#hints").innerHTML=hintHTML();
  const info=`${cur.name}(${cur.code}・${cur.sector})`;
  const res=$("#res");res.hidden=false;res.className="res "+(right?"good":"bad");
  res.innerHTML=mark(right,72)+`<div class="rt">`+(right
-  ?`<b>正解!</b><br>${info} +${p}点<div class="story">${T.pull}${hn?" "+T.small:""}</div>`
-  :`<b>不正解</b><br>正解は ${info}<br>あなたの回答:${pick.name}<div class="story">${T.wrong}</div>`)+`</div>`;
- const nx=$("#nx");nx.hidden=false;nx.textContent=qi+1<Q.length?"次の問題":"結果を見る";
+  ?`<b>正解!</b><br>${info} +${p}点<div class="story">${TXT.pull}${hn?" "+TXT.small:""}</div>`
+  :`<b>不正解</b><br>正解は ${info}<br>あなたの回答:${pick.name}<div class="story">${TXT.wrong}</div>`)+`</div>`;
+ $("#nx").hidden=false;
+ curMs=right?DELAY_OK:DELAY_NG;
+ arm();
  $("#fb").scrollIntoView({block:"nearest"});
 };
+/* ---- 結果画面 ---- */
+function resItem(h,i){
+ const ok=h.right;
+ const col=(tag,s,w,cls)=>`<div class="col ${cls}"><div class="tag">${tag}</div><div class="row"><b>${s.name}</b>(${s.code}・${s.sector})</div>
+  <div class="lbl">時価総額(${asof}時点)</div><div class="cap sm">${fmt(s.marketcap)}</div><canvas class="mini" data-i="${i}" data-w="${w}"></canvas></div>`;
+ return `<div class="panel item"><div class="top"><span class="hd ${ok?"good":"bad"}">${mark(ok,36)}${miniMan(ok?"cheer":"sad")}<span>第${i+1}問 ${ok?"正解":"不正解"}</span></span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>`
+  +(ok?col("あなたの回答(正解)",h.stock,"a","ok")
+      :`<div class="pair">${col("あなたの回答(不正解)",h.pick,"p","wrong")}${col("正解",h.stock,"a","ok")}</div>`)+`</div>`;
+}
 function end(){
- cur=null;
+ clearT();cur=null;
+ const nt=F.filter(s=>s!=="d").length,mode=nt>=4?"cheer":nt===0?"sad":"idle";
  $("#app").innerHTML=`<div class="panel item"><div class="lbl">結果</div><div class="cap">${pt(score)} / ${Q.length}点</div>
- ${fieldHTML(F)}<div id="endbox">${endHTML()}</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
- H.map((h,i)=>`<div class="panel item"><div class="top"><span class="hd ${h.right?"good":"bad"}">${mark(h.right,36)}<span>第${i+1}問 ${h.right?"正解":"不正解"}</span></span><span>${h.p}点${h.hn?`(ヒント${h.hn}回)`:""}</span></div>
- <div class="lbl">時価総額(${asof}時点)</div><div class="cap sm">${fmt(h.stock.marketcap)}</div>
- <canvas class="mini" data-i="${i}"></canvas>
- <div class="row">あなたの回答:<b>${h.pick.name}</b></div>
- <div class="row">正解:<b>${h.stock.name}</b>(${h.stock.code}・${h.stock.sector})</div></div>`).join("")+
- `<button class="next sp" id="rs">もう一度あそぶ</button>`;
+ ${fieldHTML(F,null,{i:2,mode})}<div class="end">${TXT.end[nt]}</div><button class="next" id="rs">もう一度あそぶ</button></div>`+
+ H.map(resItem).join("")+
+ `<button class="next sp" id="rs2">もう一度あそぶ</button>`;
  redraw();
 }
 </script></body></html>
