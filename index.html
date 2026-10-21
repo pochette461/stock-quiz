@@ -23,7 +23,7 @@ main{width:100%;max-width:720px}
 .asof{font-size:12px;color:var(--mu)}
 canvas{width:100%;display:block}
 #cv{height:340px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
-.mini{height:90px;border:1px solid var(--ln);margin-bottom:8px}
+.mini{height:120px;border:1px solid var(--ln);margin-bottom:8px}
 #tip{font-size:12px;color:var(--mu);margin:6px 0 0;min-height:18px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 button{font:inherit;padding:12px;border-radius:4px;border:1px solid var(--ln);background:var(--pn);color:var(--fg);cursor:pointer}
@@ -258,8 +258,8 @@ function drawChart(cv,s,full){
  const x=cv.getContext("2d");x.setTransform(r,0,0,r,0,0);
  const st=getComputedStyle(document.documentElement),mu=st.getPropertyValue("--mu").trim(),ln=st.getPropertyValue("--ln").trim();
  const k=s.marketcap/c.at(-1)[4];
- const hasV=full&&c[0].length>5;
- const L=full?LM:6,R=RM,T=8,B=full?24:6,VH=hasV?58:0,GAP=hasV?10:0;
+ const hasV=c[0].length>5;
+ const L=full?LM:6,R=RM,T=8,B=full?24:6,VH=hasV?(full?58:26):0,GAP=hasV?(full?10:4):0;
  const lo=Math.min(...c.map(q=>q[3])),hi=Math.max(...c.map(q=>q[2]));
  const pw=W-L-R,ph=Ht-T-B-VH-GAP,bw=pw/c.length;
  const y=v=>T+(hi-v)/(hi-lo)*ph;
@@ -292,9 +292,9 @@ function drawChart(cv,s,full){
  if(hasV){
   const vm=niceMax(Math.max(...c.map(q=>q[5]),1)),base=Ht-B,top=base-VH;
   x.strokeStyle=ln;x.lineWidth=.5;x.beginPath();x.moveTo(L,top);x.lineTo(W-R,top);x.moveTo(L,base);x.lineTo(W-R,base);x.stroke();
-  x.textAlign="right";x.textBaseline="middle";x.fillStyle=mu;x.fillText(fmtVolAx(vm),L-6,top+5);
+  if(full){x.textAlign="right";x.textBaseline="middle";x.fillStyle=mu;x.fillText(fmtVolAx(vm),L-6,top+5);
   x.textBaseline="bottom";x.fillText("0",L-6,base);
-  x.textAlign="left";x.textBaseline="top";x.font="10px sans-serif";x.fillText("出来高",L+4,top+3);
+  x.textAlign="left";x.textBaseline="top";x.font="10px sans-serif";x.fillText("出来高",L+4,top+3);}
   x.globalAlpha=.6;
   c.forEach((q,i)=>{
    const cx=L+(i+.5)*bw,h=Math.max(.5,q[5]/vm*VH);
