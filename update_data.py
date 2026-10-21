@@ -98,7 +98,7 @@ for code, (name, sector) in STOCKS.items():
         t = yf.Ticker(code + ".T")
         df = t.history(period="1y", interval="1d", auto_adjust=False).dropna()
         candles = [[d.strftime("%Y-%m-%d"), round(r.Open, 1), round(r.High, 1),
-                    round(r.Low, 1), round(r.Close, 1)] for d, r in df.iterrows()]
+                    round(r.Low, 1), round(r.Close, 1), int(r.Volume)] for d, r in df.iterrows()]
         if len(candles) < 20:
             raise ValueError("データ不足")
         mc, note = market_cap(code, t, candles[-1][4])
